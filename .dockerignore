@@ -1,0 +1,70 @@
+# Git / VCS
+.git/
+.gitignore
+.gitattributes
+
+# Claude Code / IDE
+.claude/
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.suo
+
+# .NET build artifacts (se generan dentro del container)
+**/bin/
+**/obj/
+*.dll
+*.exe
+*.pdb
+*.lscache
+publish/
+
+# Variables de entorno y secretos (se inyectan via -e)
+.env
+.env.*
+appsettings.*.local.json
+appsettings.Production.json
+secrets.json
+
+# Certificados (montar como volumen si se necesitan)
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.csr
+
+# Bases de datos (van en volumen o server externo)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Documentacion (no afecta runtime)
+README.md
+*.md
+doc/
+LICENSE
+
+# Tests no van a runtime
+tests/
+
+# Setup scripts no van a runtime
+setup.ps1
+scripts/
+
+# Frontend (no es parte de este repo pero por si esta clonado)
+client-frontend/
+frontend/
+node_modules/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

@@ -126,6 +126,27 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Aplicar migraciones EF Core automaticamente solo si esta activado por env var.
+// Util en Docker / cloud donde no se quiere ejecutar `dotnet ef database update` manual.
+// En desarrollo local sigue corriendo con setup.ps1 (variable NO seteada).
+if (Environment.GetEnvironmentVariable("RUN_MIGRATIONS_ON_STARTUP")?.ToLower() == "true")
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<SecretsDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        logger.LogInformation("Aplicando migraciones EF Core...");
+        db.Database.Migrate();
+        logger.LogInformation("Migraciones aplicadas correctamente.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error aplicando migraciones EF Core");
+        throw;
+    }
+}
+
 // NO usar UseHttpsRedirection — rompería el flujo HTTP del frontend con redirect 307.
 // HTTP y HTTPS coexisten en paralelo (8080 y 8443). El frontend elige cual usar via .env.
 app.UseCors();

@@ -179,6 +179,46 @@ proyecto distrubuidos/
 
 ---
 
+## Docker (opcional — para deploy en AWS / Cloud Run / cualquier servidor)
+
+Levanta el backend cliente + SQL Server juntos con un solo comando:
+
+```bash
+# Build + run del cliente .NET + SQL Server 2022 en containers
+docker compose up -d --build
+
+# Ver logs
+docker compose logs -f client
+
+# Detener
+docker compose down
+
+# Detener y borrar la BD persistente
+docker compose down -v
+```
+
+El backend queda en `localhost:8080`. **Las migraciones EF Core se aplican automaticamente** al startup (variable `RUN_MIGRATIONS_ON_STARTUP=true` ya seteada en el compose).
+
+### Conectarse al servidor Python desde el container
+
+Por defecto el cliente apunta a `http://host.docker.internal:9000` — eso significa: el servidor Python corre en el HOST (tu PC o el host del cloud), fuera del container.
+
+Si el servidor Python corre **en otra PC en la LAN**:
+```bash
+SERVER_CENTRAL_URL=http://192.168.1.50:9000 docker compose up -d
+```
+
+Si el servidor Python tambien corre en Docker en la misma maquina, agrega ambos servicios al mismo compose (combinar `docker-compose.yml` de ambos repos).
+
+### Variables de entorno disponibles
+- `ConnectionStrings__DefaultConnection` — connection string SQL Server
+- `Server__CentralUrl` — URL del servidor Python
+- `Server__InternalToken` — token compartido cliente↔servidor
+- `Jwt__SecretKey` — clave de firma JWT (cambiar en produccion)
+- `RUN_MIGRATIONS_ON_STARTUP` — si `true`, aplica migraciones al arrancar (recomendado en Docker)
+
+**Imagen final pesa ~220MB** (multi-stage build con `dotnet/aspnet:8.0` runtime).
+
 ## Tests
 
 ```powershell

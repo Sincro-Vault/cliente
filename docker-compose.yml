@@ -1,0 +1,56 @@
+services:
+  # SQL Server 2022 Developer Edition (gratuito para dev/test)
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sincro-vault-sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Sincro_Vault_2026!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Sincro_Vault_2026!' -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Sincro_Vault_2026!' -Q 'SELECT 1'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Backend Cliente .NET 8
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sincro-vault/cliente:latest
+    container_name: sincro-vault-client
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # Connection string apunta al container sqlserver
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SecretsClient;User Id=sa;Password=Sincro_Vault_2026!;TrustServerCertificate=True;MultipleActiveResultSets=True"
+      # URL del servidor central (cambiar segun donde corra)
+      Server__CentralUrl: "${SERVER_CENTRAL_URL:-http://host.docker.internal:9000}"
+      Server__InternalToken: "shared-secret-cliente-servidor-2026"
+      # JWT
+      Jwt__SecretKey: "EstaEsUnaClaveSuperSecretaParaDesarrollo2026!"
+      Jwt__Issuer: "SecretsClient"
+      Jwt__Audience: "SecretsClientUsers"
+      # Aplicar migraciones EF Core automaticamente al arrancar
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+      ASPNETCORE_ENVIRONMENT: "Production"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  sqlserver-data:
