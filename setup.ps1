@@ -13,7 +13,7 @@ Write-Host "==================================================" -ForegroundColor
 Write-Host ""
 
 # 1. Verificar .NET 8 SDK
-Write-Host "[1/4] Verificando .NET 8 SDK..." -ForegroundColor Yellow
+Write-Host "[1/5] Verificando .NET 8 SDK..." -ForegroundColor Yellow
 try {
     $dotnetVer = dotnet --version 2>&1
     Write-Host "      .NET $dotnetVer" -ForegroundColor Green
@@ -24,7 +24,7 @@ try {
 
 # 2. Verificar / instalar dotnet-ef
 Write-Host ""
-Write-Host "[2/4] Verificando dotnet-ef..." -ForegroundColor Yellow
+Write-Host "[2/5] Verificando dotnet-ef..." -ForegroundColor Yellow
 $efOk = (dotnet ef --version 2>$null) -ne $null
 if (-not $efOk) {
     Write-Host "      Instalando dotnet-ef..." -ForegroundColor Yellow
@@ -32,9 +32,37 @@ if (-not $efOk) {
 }
 Write-Host "      dotnet-ef OK" -ForegroundColor Green
 
-# 3. Restaurar y compilar
+# 3. PREGUNTAR donde esta el servidor Python (otra PC vs misma PC)
 Write-Host ""
-Write-Host "[3/4] Restaurando paquetes y compilando..." -ForegroundColor Yellow
+Write-Host "[3/5] Configurando URL del servidor central..." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  El servidor Python esta corriendo en..." -ForegroundColor White
+Write-Host "    [1] Esta misma PC (localhost)" -ForegroundColor White
+Write-Host "    [2] Otra PC en la red LAN" -ForegroundColor White
+$choice = Read-Host "  Elige (1 o 2)"
+
+if ($choice -eq "2") {
+    $serverIp = Read-Host "  IP de la PC del servidor (ej: 192.168.1.2)"
+    if ([string]::IsNullOrWhiteSpace($serverIp)) {
+        Write-Host "ERROR: IP requerida" -ForegroundColor Red
+        exit 1
+    }
+    $centralUrl = "http://${serverIp}:9000"
+} else {
+    $centralUrl = "http://localhost:9000"
+}
+Write-Host "      Servidor central: $centralUrl" -ForegroundColor Green
+
+# Actualizar appsettings.json
+$appsettingsPath = "src\SecretsClient.API\appsettings.json"
+$json = Get-Content $appsettingsPath -Raw | ConvertFrom-Json
+$json.Server.CentralUrl = $centralUrl
+$json | ConvertTo-Json -Depth 10 | Set-Content $appsettingsPath -Encoding UTF8
+Write-Host "      appsettings.json actualizado" -ForegroundColor Green
+
+# 4. Restaurar y compilar
+Write-Host ""
+Write-Host "[4/5] Restaurando paquetes y compilando..." -ForegroundColor Yellow
 dotnet restore src/SecretsClient.API/SecretsClient.API.csproj | Out-Null
 dotnet build src/SecretsClient.API/SecretsClient.API.csproj -c Debug --nologo -v quiet
 if ($LASTEXITCODE -ne 0) {
@@ -43,9 +71,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "      Compilado" -ForegroundColor Green
 
-# 4. Aplicar migraciones a SQL Server
+# 5. Aplicar migraciones a SQL Server
 Write-Host ""
-Write-Host "[4/4] Aplicando migraciones a SQL Server..." -ForegroundColor Yellow
+Write-Host "[5/5] Aplicando migraciones a SQL Server..." -ForegroundColor Yellow
 Write-Host "      (asegurate de tener SQL Server corriendo en localhost)" -ForegroundColor Gray
 dotnet ef database update --project src/SecretsClient.Infrastructure --startup-project src/SecretsClient.API
 if ($LASTEXITCODE -ne 0) {
@@ -68,8 +96,13 @@ Write-Host "    dotnet run --project src/SecretsClient.API" -ForegroundColor Cya
 Write-Host ""
 Write-Host "Swagger : http://localhost:8080/swagger" -ForegroundColor White
 Write-Host "Health  : http://localhost:8080/api/health" -ForegroundColor White
+Write-Host "Servidor central configurado en: $centralUrl" -ForegroundColor White
 Write-Host ""
-Write-Host "IMPORTANTE: el servidor central Python debe estar corriendo en otra terminal" -ForegroundColor Yellow
-Write-Host "antes de crear secretos. Por defecto se asume http://localhost:9000" -ForegroundColor Yellow
-Write-Host "(configurable en src/SecretsClient.API/appsettings.json -> Server.CentralUrl)" -ForegroundColor Yellow
-Write-Host ""
+if ($choice -eq "2") {
+    Write-Host "IMPORTANTE: en la PC del servidor ($serverIp), asegurate de que:" -ForegroundColor Yellow
+    Write-Host "  1. El servidor Python este corriendo (python -m src.main)" -ForegroundColor Cyan
+    Write-Host "  2. El firewall tenga abiertos los puertos 9000 y 50051" -ForegroundColor Cyan
+    Write-Host "     (correr en esa PC como Admin: scripts\open-firewall.ps1)" -ForegroundColor Cyan
+    Write-Host "  3. Verificar conectividad: curl http://${serverIp}:9000/api/health" -ForegroundColor Cyan
+    Write-Host ""
+}
