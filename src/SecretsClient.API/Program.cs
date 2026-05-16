@@ -2,11 +2,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Security.Authentication;
 using SecretsClient.Infrastructure.DI;
 using Microsoft.EntityFrameworkCore;
 using SecretsClient.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Kestrel: aceptar TLS 1.2 y 1.3 (preferencia 1.3 si el SO lo soporta).
+// Windows 10 SChannel solo soporta TLS 1.2; Windows 11+ y Linux soportan 1.3 nativo.
+// HTTP plano (puerto 8080) sigue funcionando en paralelo sin cambios.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ConfigureHttpsDefaults(httpsOptions =>
+    {
+        httpsOptions.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+    });
+});
 
 // ===== Agregar Servicios =====
 
@@ -114,7 +126,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// NO usar UseHttpsRedirection — rompería el flujo HTTP del frontend con redirect 307.
+// HTTP y HTTPS coexisten en paralelo (8080 y 8443). El frontend elige cual usar via .env.
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
