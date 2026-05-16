@@ -1,0 +1,74 @@
+# ============================================
+#  IGNORAR — datos personales y locales
+# ============================================
+
+# Claude Code (memoria local, settings personales)
+.claude/
+
+# Documentos de soporte (no son codigo)
+doc/
+*.pdf
+*.docx
+
+# ============================================
+#  IGNORAR — build artifacts .NET
+# ============================================
+src/**/bin/
+src/**/obj/
+tests/**/bin/
+tests/**/obj/
+*.dll
+*.exe
+*.pdb
+*.lscache
+publish/
+
+# ============================================
+#  IGNORAR — archivos sensibles (NUNCA subir)
+# ============================================
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Connection strings y secretos
+appsettings.*.local.json
+appsettings.Production.json
+secrets.json
+
+# Certificados y claves
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.csr
+
+# ============================================
+#  IGNORAR — datos en tiempo de ejecucion
+# ============================================
+
+# SQLite (legacy, ya no se usa)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# ============================================
+#  IGNORAR — IDE / sistema operativo
+# ============================================
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.DS_Store
+Thumbs.db
