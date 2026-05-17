@@ -12,9 +12,7 @@ namespace SecretsClient.Infrastructure.Data
         public SecretsDbContext CreateDbContext(string[] args)
         {
             var builder = new DbContextOptionsBuilder<SecretsDbContext>();
-            var connectionString =
-                "Server=localhost;Database=SecretsClient;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True";
-            builder.UseSqlServer(connectionString);
+            builder.UseSqlite("Data Source=secrets.db");
             return new SecretsDbContext(builder.Options);
         }
     }

@@ -50,11 +50,14 @@ secrets.json
 #  IGNORAR — datos en tiempo de ejecucion
 # ============================================
 
-# SQLite (legacy, ya no se usa)
+# SQLite — BD local del cliente (no debe subirse al repo)
 *.db
 *.db-shm
 *.db-wal
 *.sqlite
+
+# Carpeta de datos persistentes de Docker (volumen ./data en la raiz del proyecto)
+/data/
 
 # Logs
 *.log

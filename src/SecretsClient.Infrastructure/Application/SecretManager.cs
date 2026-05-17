@@ -95,7 +95,9 @@ public class SecretManager : ISecretManager
         catch (Exception ex)
         {
             _logger.LogError(ex, "Servidor central inalcanzable. Rollback del secreto {Id}", secret.Id);
-            await _storage.DeleteSecretAsync(secret.Id, ct);
+            // El rollback NO debe usar el ct original — si el upload se canceló por timeout,
+            // el ct llega cancelado y EF Core no podría abrir conexión para borrar.
+            await _storage.DeleteSecretAsync(secret.Id, CancellationToken.None);
             throw new InvalidOperationException(
                 "No se pudo enviar el Fragmento B al servidor central. El secreto fue revertido. " +
                 "Verifica que el servidor esté disponible.", ex);

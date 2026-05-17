@@ -1,25 +1,5 @@
 services:
-  # SQL Server 2022 Developer Edition (gratuito para dev/test)
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sincro-vault-sqlserver
-    restart: unless-stopped
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Sincro_Vault_2026!"
-      MSSQL_PID: "Developer"
-    ports:
-      - "1433:1433"
-    volumes:
-      - sqlserver-data:/var/opt/mssql
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Sincro_Vault_2026!' -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Sincro_Vault_2026!' -Q 'SELECT 1'"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
-
-  # Backend Cliente .NET 8
+  # Backend Cliente .NET 8 con SQLite local (persistente via volumen)
   client:
     build:
       context: .
@@ -27,16 +7,21 @@ services:
     image: sincro-vault/cliente:latest
     container_name: sincro-vault-client
     restart: unless-stopped
-    depends_on:
-      sqlserver:
-        condition: service_healthy
+    networks:
+      # Red propia para curl/healthcheck
+      - default
+      # Red del servidor central (compose hermano) para alcanzar sincro-vault-server:9000
+      - servidor_default
     ports:
       - "8080:8080"
+    volumes:
+      # Persistir la BD SQLite entre rebuilds del container
+      - ./data:/app/data
     environment:
-      # Connection string apunta al container sqlserver
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SecretsClient;User Id=sa;Password=Sincro_Vault_2026!;TrustServerCertificate=True;MultipleActiveResultSets=True"
-      # URL del servidor central (cambiar segun donde corra)
-      Server__CentralUrl: "${SERVER_CENTRAL_URL:-http://host.docker.internal:9000}"
+      # SQLite — archivo dentro del volumen montado
+      ConnectionStrings__DefaultConnection: "Data Source=/app/data/secrets.db"
+      # URL del servidor central — nombre del container en la red servidor_default
+      Server__CentralUrl: "${SERVER_CENTRAL_URL:-http://sincro-vault-server:9000}"
       Server__InternalToken: "shared-secret-cliente-servidor-2026"
       # JWT
       Jwt__SecretKey: "EstaEsUnaClaveSuperSecretaParaDesarrollo2026!"
@@ -52,5 +37,8 @@ services:
       retries: 3
       start_period: 30s
 
-volumes:
-  sqlserver-data:
+networks:
+  default:
+    driver: bridge
+  servidor_default:
+    external: true

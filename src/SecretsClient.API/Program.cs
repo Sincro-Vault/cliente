@@ -22,9 +22,9 @@ builder.WebHost.ConfigureKestrel(options =>
 
 // ===== Agregar Servicios =====
 
-// 0. Base de Datos (SQL Server Express)
+// 0. Base de Datos (SQLite — local por instancia, ver CLAUDE.md)
 builder.Services.AddDbContext<SecretsDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 1. Autenticación JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");

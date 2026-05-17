@@ -1,6 +1,6 @@
-# Setup automatico del Backend Cliente (.NET 8 + SQL Server)
+# Setup automatico del Backend Cliente (.NET 8 + SQLite)
 # Uso: .\setup.ps1
-# Requiere: .NET 8 SDK, dotnet-ef tool, SQL Server (Express o LocalDB)
+# Requiere: .NET 8 SDK, dotnet-ef tool
 
 $ErrorActionPreference = "Stop"
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -8,7 +8,7 @@ Set-Location $ScriptRoot
 
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host " SecretsClient - Setup automatico" -ForegroundColor Cyan
+Write-Host " SecretsClient - Setup automatico (SQLite)" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -32,11 +32,11 @@ if (-not $efOk) {
 }
 Write-Host "      dotnet-ef OK" -ForegroundColor Green
 
-# 3. PREGUNTAR donde esta el servidor Python (otra PC vs misma PC)
+# 3. PREGUNTAR donde esta el servidor central (otra PC vs misma PC)
 Write-Host ""
 Write-Host "[3/5] Configurando URL del servidor central..." -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  El servidor Python esta corriendo en..." -ForegroundColor White
+Write-Host "  El servidor central esta corriendo en..." -ForegroundColor White
 Write-Host "    [1] Esta misma PC (localhost)" -ForegroundColor White
 Write-Host "    [2] Otra PC en la red LAN" -ForegroundColor White
 $choice = Read-Host "  Elige (1 o 2)"
@@ -71,20 +71,19 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "      Compilado" -ForegroundColor Green
 
-# 5. Aplicar migraciones a SQL Server
+# 5. Crear archivo SQLite y aplicar migraciones
 Write-Host ""
-Write-Host "[5/5] Aplicando migraciones a SQL Server..." -ForegroundColor Yellow
-Write-Host "      (asegurate de tener SQL Server corriendo en localhost)" -ForegroundColor Gray
+Write-Host "[5/5] Aplicando migraciones EF Core (SQLite)..." -ForegroundColor Yellow
+Write-Host "      (creara secrets.db en la raiz del proyecto si no existe)" -ForegroundColor Gray
 dotnet ef database update --project src/SecretsClient.Infrastructure --startup-project src/SecretsClient.API
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: no se pudo conectar a SQL Server." -ForegroundColor Red
-    Write-Host "  Verifica que SQL Server este instalado y corriendo:" -ForegroundColor Yellow
-    Write-Host "    sc query MSSQLSERVER     (debe decir RUNNING)" -ForegroundColor Cyan
-    Write-Host "  Si tu instancia se llama distinto, edita appsettings.json:" -ForegroundColor Yellow
-    Write-Host "    Server=localhost\NOMBRE_INSTANCIA;Database=SecretsClient;..." -ForegroundColor Cyan
+    Write-Host "ERROR: fallo aplicacion de migraciones." -ForegroundColor Red
+    Write-Host "  Verifica que exista la carpeta src/SecretsClient.Infrastructure/Migrations/" -ForegroundColor Yellow
+    Write-Host "  Si no existe, crearla con:" -ForegroundColor Yellow
+    Write-Host "    dotnet ef migrations add InitialCreate --project src/SecretsClient.Infrastructure --startup-project src/SecretsClient.API" -ForegroundColor Cyan
     exit 1
 }
-Write-Host "      Base de datos SecretsClient creada" -ForegroundColor Green
+Write-Host "      Base de datos secrets.db lista" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Green
@@ -100,7 +99,7 @@ Write-Host "Servidor central configurado en: $centralUrl" -ForegroundColor White
 Write-Host ""
 if ($choice -eq "2") {
     Write-Host "IMPORTANTE: en la PC del servidor ($serverIp), asegurate de que:" -ForegroundColor Yellow
-    Write-Host "  1. El servidor Python este corriendo (python -m src.main)" -ForegroundColor Cyan
+    Write-Host "  1. El servidor este corriendo" -ForegroundColor Cyan
     Write-Host "  2. El firewall tenga abiertos los puertos 9000 y 50051" -ForegroundColor Cyan
     Write-Host "     (correr en esa PC como Admin: scripts\open-firewall.ps1)" -ForegroundColor Cyan
     Write-Host "  3. Verificar conectividad: curl http://${serverIp}:9000/api/health" -ForegroundColor Cyan

@@ -24,6 +24,11 @@ RUN dotnet publish src/SecretsClient.API/SecretsClient.API.csproj \
 # ----------- Stage 2: runtime ------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
+# Instalar curl para healthchecks (la imagen base no lo incluye)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 # Crear usuario no-root para mejor seguridad
 RUN groupadd --system --gid 1000 secretsclient \
  && useradd --system --uid 1000 --gid secretsclient --create-home secretsclient
@@ -31,8 +36,9 @@ RUN groupadd --system --gid 1000 secretsclient \
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Permisos
-RUN chown -R secretsclient:secretsclient /app
+# Carpeta /app/data para el archivo SQLite (montada como volumen en docker-compose)
+RUN mkdir -p /app/data \
+ && chown -R secretsclient:secretsclient /app
 USER secretsclient
 
 EXPOSE 8080
