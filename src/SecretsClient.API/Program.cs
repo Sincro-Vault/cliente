@@ -8,7 +8,11 @@ using SecretsClient.Infrastructure.DI;
 using Microsoft.EntityFrameworkCore;
 using SecretsClient.Infrastructure.Data;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
 
 // Kestrel: aceptar TLS 1.2 y 1.3 (preferencia 1.3 si el SO lo soporta).
 // Windows 10 SChannel solo soporta TLS 1.2; Windows 11+ y Linux soportan 1.3 nativo.
