@@ -5,6 +5,7 @@
 # ----------- Stage 1: build --------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+RUN echo "building with new CORS settings v3"
 
 # Copiar csproj primero para cachear el restore en una capa separada
 COPY src/SecretsClient.Core/SecretsClient.Core.csproj           src/SecretsClient.Core/

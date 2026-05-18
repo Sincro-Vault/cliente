@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -59,11 +60,44 @@ builder.Services.AddCors(options =>
 {
     // Política permisiva: permite cualquier origen LAN (localhost y cualquier IP de la red local).
     // Los Allowed origins extra pueden agregarse vía la sección "Cors:Origins" del appsettings.json.
+    var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();
+
     options.AddDefaultPolicy(policy =>
-        policy.SetIsOriginAllowed(_ => true)
-              .AllowAnyHeader()
+    {
+        policy.AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials());
+              .AllowCredentials();
+
+        policy.SetIsOriginAllowed(origin =>
+        {
+            // Permitir explícitamente el origen solicitado
+            if (string.Equals(origin, "https://vault.haroldsoftware.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Permitir orígenes configurados en appsettings.json
+            if (allowedOrigins.Any(o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // Permitir localhost, 127.0.0.1 y IPs locales LAN
+            try
+            {
+                var uri = new Uri(origin);
+                return uri.Host == "localhost" || 
+                       uri.Host == "127.0.0.1" || 
+                       uri.Host.StartsWith("192.168.") || 
+                       uri.Host.StartsWith("10.") || 
+                       uri.Host.StartsWith("172.");
+            }
+            catch
+            {
+                return false;
+            }
+        });
+    });
 });
 
 // 3. Swagger/OpenAPI con soporte JWT

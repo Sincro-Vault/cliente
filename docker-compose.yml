@@ -7,11 +7,6 @@ services:
     image: sincro-vault/cliente:latest
     container_name: sincro-vault-client
     restart: unless-stopped
-    networks:
-      # Red propia para curl/healthcheck
-      - default
-      # Red del servidor central (compose hermano) para alcanzar sincro-vault-server:9000
-      - servidor_default
     ports:
       - "8080:8080"
     volumes:
@@ -21,7 +16,7 @@ services:
       # SQLite — archivo dentro del volumen montado
       ConnectionStrings__DefaultConnection: "Data Source=/app/data/secrets.db"
       # URL del servidor central — nombre del container en la red servidor_default
-      Server__CentralUrl: "${SERVER_CENTRAL_URL:-http://sincro-vault-server:9000}"
+      Server__CentralUrl: "http://vault-app-nlb-2cdc4ee3bd437959.elb.us-east-1.amazonaws.com:9000"
       Server__InternalToken: "shared-secret-cliente-servidor-2026"
       # JWT
       Jwt__SecretKey: "EstaEsUnaClaveSuperSecretaParaDesarrollo2026!"
@@ -40,5 +35,3 @@ services:
 networks:
   default:
     driver: bridge
-  servidor_default:
-    external: true
