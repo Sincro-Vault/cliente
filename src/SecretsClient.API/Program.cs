@@ -69,6 +69,13 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+
     // Política permisiva: permite cualquier origen LAN (localhost y cualquier IP de la red local).
     // Los Allowed origins extra pueden agregarse vía la sección "Cors:Origins" del appsettings.json.
     var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? Array.Empty<string>();

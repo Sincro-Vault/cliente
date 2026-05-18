@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using SecretsClient.Core.Services;
 
@@ -7,6 +8,7 @@ namespace SecretsClient.API.Controllers;
 [ApiController]
 [Route("api/health")]
 [AllowAnonymous]
+[EnableCors("AllowAll")]
 public class HealthController : ControllerBase
 {
     private readonly IHealthCheckService _healthCheckService;
