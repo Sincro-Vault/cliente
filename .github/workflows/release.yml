@@ -46,14 +46,14 @@ jobs:
         if: matrix.os == 'win-x64'
         run: |
           cd output/${{ matrix.os }}
-          zip -r ../../SincroVault-${{ matrix.name }}.zip SecretsClient.API.exe
+          zip -r ../../SincroVault-${{ matrix.name }}.zip SecretsClient.API.exe appsettings.json
           
       - name: Package Unix (.tar.gz)
         if: matrix.os != 'win-x64'
         run: |
           cd output/${{ matrix.os }}
           chmod +x SecretsClient.API
-          tar -czvf ../../SincroVault-${{ matrix.name }}.tar.gz SecretsClient.API
+          tar -czvf ../../SincroVault-${{ matrix.name }}.tar.gz SecretsClient.API appsettings.json
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
