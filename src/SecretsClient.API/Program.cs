@@ -150,6 +150,26 @@ var app = builder.Build();
 
 // ===== Configurar Pipeline HTTP =====
 
+// Middleware de diagnóstico profundo para peticiones y CORS
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    var origin = context.Request.Headers["Origin"].ToString();
+    var method = context.Request.Method;
+    var path = context.Request.Path;
+    
+    logger.LogInformation($"[HTTP IN] {method} {path} | Origin header: '{origin}'");
+    
+    context.Response.OnStarting(() =>
+    {
+        var allowOrigin = context.Response.Headers["Access-Control-Allow-Origin"].ToString();
+        logger.LogInformation($"[HTTP OUT] {method} {path} | Access-Control-Allow-Origin: '{allowOrigin}'");
+        return Task.CompletedTask;
+    });
+
+    await next(context);
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
