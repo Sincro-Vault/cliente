@@ -1,0 +1,65 @@
+name: Build and Release Executables
+
+on:
+  push:
+    tags:
+      - 'v*' # Se ejecutará automáticamente cuando subas un tag que empiece con 'v', ej: v1.0.0
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        include:
+          - os: win-x64
+            name: Windows-x64
+          - os: osx-x64
+            name: macOS-Intel
+          - os: osx-arm64
+            name: macOS-AppleSilicon
+          - os: linux-x64
+            name: Linux-x64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Executable
+        run: |
+          dotnet publish src/SecretsClient.API/SecretsClient.API.csproj \
+            -c Release \
+            -r ${{ matrix.os }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o output/${{ matrix.os }}
+
+      - name: Package Windows (.zip)
+        if: matrix.os == 'win-x64'
+        run: |
+          cd output/${{ matrix.os }}
+          zip -r ../../SincroVault-${{ matrix.name }}.zip SecretsClient.API.exe
+          
+      - name: Package Unix (.tar.gz)
+        if: matrix.os != 'win-x64'
+        run: |
+          cd output/${{ matrix.os }}
+          chmod +x SecretsClient.API
+          tar -czvf ../../SincroVault-${{ matrix.name }}.tar.gz SecretsClient.API
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            SincroVault-*.zip
+            SincroVault-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -24,8 +24,19 @@ builder.WebHost.ConfigureKestrel(options =>
 // ===== Agregar Servicios =====
 
 // 0. Base de Datos (SQLite — local por instancia, ver CLAUDE.md)
+// Usamos AppData en entorno nativo para evitar problemas de permisos o pérdida de la base de datos
+var dbPath = "secrets.db";
+if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
+{
+    var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    var vaultDir = System.IO.Path.Combine(appDataPath, "SincroVault");
+    if (!System.IO.Directory.Exists(vaultDir)) System.IO.Directory.CreateDirectory(vaultDir);
+    dbPath = System.IO.Path.Combine(vaultDir, "secrets.db");
+}
+var connectionString = $"Data Source={dbPath}";
+
 builder.Services.AddDbContext<SecretsDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(connectionString));
 
 // 1. Autenticación JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -180,12 +191,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Aplicar migraciones EF Core automaticamente solo si esta activado por env var.
-// Util en Docker / cloud donde no se quiere ejecutar `dotnet ef database update` manual.
-// En desarrollo local sigue corriendo con setup.ps1 (variable NO seteada).
-if (Environment.GetEnvironmentVariable("RUN_MIGRATIONS_ON_STARTUP")?.ToLower() == "true")
+// Aplicar migraciones EF Core automaticamente.
+// Vital para cuando se distribuye como ejecutable nativo a los usuarios.
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<SecretsDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
